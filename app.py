@@ -1,5 +1,6 @@
-"""Mürekkep - Basit bir blog uygulaması"""
+"""Mürekkep - Basit Blog Uygulaması"""
 import os
+from datetime import timedelta
 
 from flask import (Flask, abort, flash, redirect, render_template, request,
                    url_for)
@@ -10,7 +11,6 @@ from sqlalchemy import or_
 
 from forms import (BioForm, CommentForm, LoginForm, PasswordChangeForm,
                    PostForm, RegisterForm)
-from datetime import timedelta
 from models import Comment, Like, Post, User, db, follows, simdi
 from utils import (POSTS_PER_PAGE, bas_harf_filter, guvenli_url, md_filter,
                    page_url, sayfa_no, tarih_filter, yeni_yazarlar)
@@ -306,7 +306,6 @@ def seed():
 
     deniz = User(username="deniz", email="deniz@example.com",
                  bio="Kısa öyküler, uzun yürüyüşler.", created_at=gun_once(40))
-    deniz.set_password("parola123")
     ada = User(username="ada", email="ada@example.com",
                bio="Şiir okur, deneme yazar.", created_at=gun_once(30))
     kerem = User(username="kerem", email="kerem@example.com",
