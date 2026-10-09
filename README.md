@@ -64,12 +64,11 @@ pip install -r requirements.txt
 
 # Uygulamayı başlatın
 python app.py
-
-!!! Boş bir veritabanıyla başlarsan ana sayfada yazı görünmez; örnek veri için aşağıdaki komutu çalıştır.
 ```
 Tarayıcınızda http://127.0.0.1:5000 adresini açarak uygulamayı inceleyebilirsiniz.
 
-Örnek veri için: `flask --app app seed`
-(kullanıcılar: `deniz`, `ada`, `kerem`, `mira`, `selin` — hepsinin parolası: `parola123`)
+> Boş bir veritabanıyla başlarsan ana sayfada yazı görünmez. Örnek veri için:
+> `flask --app app seed`
+> (kullanıcılar: `deniz`, `ada`, `kerem`, `mira`, `selin` — hepsinin parolası: `parola123`)
 
 
