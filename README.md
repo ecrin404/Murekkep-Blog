@@ -35,7 +35,7 @@ Projeyi kendi bilgisayarınızda çalıştırmak için terminalinizde şu adıml
 
 ```bash
 # Depoyu klonlayın
-git clone [https://github.com/ecrin404/Murekkep-Blog.git](https://github.com/ecrin404/Murekkep-Blog.git)
+git clone https://github.com/ecrin404/Murekkep-Blog.git
 cd Murekkep-Blog
 
 # Sanal ortam oluşturun ve aktifleştirin
