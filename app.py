@@ -1,25 +1,19 @@
 """Mürekkep - Basit bir blog uygulaması"""
 import os
-import re
-from datetime import datetime, timezone
-from urllib.parse import urljoin, urlparse
 
-import bleach
-import markdown
 from flask import (Flask, abort, flash, redirect, render_template, request,
                    url_for)
-from flask_login import (LoginManager, UserMixin, current_user, login_required,
+from flask_login import (LoginManager, current_user, login_required,
                          login_user, logout_user)
-from flask_sqlalchemy import SQLAlchemy
-from flask_wtf import FlaskForm
 from flask_wtf.csrf import CSRFProtect
-from markupsafe import Markup
-from passlib.hash import pbkdf2_sha256
 from sqlalchemy import or_
-from wtforms import (BooleanField, PasswordField, StringField, SubmitField,
-                     TextAreaField)
-from wtforms.validators import (DataRequired, Email, EqualTo, Length, Regexp,
-                                ValidationError)
+
+from forms import (BioForm, CommentForm, LoginForm, PasswordChangeForm,
+                   PostForm, RegisterForm)
+from datetime import timedelta
+from models import Comment, Like, Post, User, db, follows, simdi
+from utils import (POSTS_PER_PAGE, bas_harf_filter, guvenli_url, md_filter,
+                   page_url, sayfa_no, tarih_filter, yeni_yazarlar)
 
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 
@@ -32,232 +26,23 @@ app.config["REMEMBER_COOKIE_HTTPONLY"] = True
 app.config["SESSION_COOKIE_HTTPONLY"] = True
 app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
 
-db = SQLAlchemy(app)
+db.init_app(app)
 csrf = CSRFProtect(app)
 login_manager = LoginManager(app)
 login_manager.login_view = "login"
 login_manager.login_message = "Bu sayfayı görmek için giriş yapmalısın."
 login_manager.login_message_category = "warning"
 
-POSTS_PER_PAGE = 6
-AYLAR = ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran",
-         "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"]
-
-
-# ----------------------------- Modeller -----------------------------
-
-def simdi():
-    return datetime.now(timezone.utc)
-
-
-follows = db.Table(
-    "follows",
-    db.Column("follower_id", db.Integer, db.ForeignKey("user.id"), primary_key=True),
-    db.Column("followed_id", db.Integer, db.ForeignKey("user.id"), primary_key=True),
-)
-
-
-class User(UserMixin, db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(20), unique=True, nullable=False, index=True)
-    email = db.Column(db.String(120), unique=True, nullable=False, index=True)
-    password_hash = db.Column(db.String(255), nullable=False)
-    bio = db.Column(db.String(200), default="")
-    created_at = db.Column(db.DateTime, default=simdi)
-
-    posts = db.relationship("Post", backref="author", lazy=True,
-                            cascade="all, delete-orphan")
-    followed = db.relationship(
-        "User", secondary=follows,
-        primaryjoin=(follows.c.follower_id == id),
-        secondaryjoin=(follows.c.followed_id == id),
-        backref=db.backref("followers", lazy="dynamic"), lazy="dynamic")
-
-    def set_password(self, password):
-        self.password_hash = pbkdf2_sha256.hash(password)
-
-    def check_password(self, password):
-        return pbkdf2_sha256.verify(password, self.password_hash)
-
-    def is_following(self, user):
-        return self.followed.filter(follows.c.followed_id == user.id).count() > 0
-
-    def follow(self, user):
-        if user.id != self.id and not self.is_following(user):
-            self.followed.append(user)
-
-    def unfollow(self, user):
-        if self.is_following(user):
-            self.followed.remove(user)
-
-
-class Post(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    title = db.Column(db.String(150), nullable=False)
-    content = db.Column(db.Text, nullable=False)
-    published = db.Column(db.Boolean, default=True, nullable=False)
-    created_at = db.Column(db.DateTime, default=simdi, index=True)
-    updated_at = db.Column(db.DateTime, default=simdi, onupdate=simdi)
-    author_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
-
-    comments = db.relationship("Comment", backref="post", lazy=True,
-                               cascade="all, delete-orphan",
-                               order_by="Comment.created_at")
-    likes = db.relationship("Like", backref="post", lazy="dynamic",
-                            cascade="all, delete-orphan")
-
-    @property
-    def reading_time(self):
-        return max(1, round(len(self.content.split()) / 200))
-
-    @property
-    def excerpt(self):
-        html = markdown.markdown(self.content)
-        text = bleach.clean(html, tags=[], strip=True)
-        text = re.sub(r"\s+", " ", text).strip()
-        return text if len(text) <= 180 else text[:180].rsplit(" ", 1)[0] + "…"
-
-    def liked_by(self, user):
-        return user.is_authenticated and \
-            self.likes.filter_by(user_id=user.id).count() > 0
-
-
-class Comment(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    body = db.Column(db.String(1000), nullable=False)
-    created_at = db.Column(db.DateTime, default=simdi)
-    user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
-    post_id = db.Column(db.Integer, db.ForeignKey("post.id"), nullable=False)
-    user = db.relationship("User")
-
-
-class Like(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
-    post_id = db.Column(db.Integer, db.ForeignKey("post.id"), nullable=False)
-    __table_args__ = (db.UniqueConstraint("user_id", "post_id"),)
+# Şablon filtreleri ve global fonksiyonlar (utils.py içinde tanımlı)
+app.add_template_filter(md_filter, "md")
+app.add_template_filter(tarih_filter, "tarih")
+app.add_template_filter(bas_harf_filter, "bas_harf")
+app.add_template_global(page_url, "page_url")
 
 
 @login_manager.user_loader
 def load_user(user_id):
     return db.session.get(User, int(user_id))
-
-
-# ----------------------------- Formlar -----------------------------
-
-def guclu_parola(form, field):
-    p = field.data or ""
-    if not (re.search(r"[A-Za-zÇĞİÖŞÜçğıöşü]", p) and re.search(r"\d", p)):
-        raise ValidationError("Parola en az bir harf ve bir rakam içermeli.")
-
-
-class RegisterForm(FlaskForm):
-    username = StringField("Kullanıcı adı", validators=[
-        DataRequired("Kullanıcı adı zorunlu."),
-        Length(3, 20, "Kullanıcı adı 3-20 karakter olmalı."),
-        Regexp(r"^[A-Za-z0-9_]+$", message="Sadece harf, rakam ve alt çizgi kullanılabilir.")])
-    email = StringField("E-posta", validators=[
-        DataRequired("E-posta zorunlu."), Email("Geçerli bir e-posta gir."),
-        Length(max=120)])
-    password = PasswordField("Parola", validators=[
-        DataRequired("Parola zorunlu."),
-        Length(8, 64, "Parola 8-64 karakter olmalı."), guclu_parola])
-    confirm = PasswordField("Parola (tekrar)", validators=[
-        DataRequired("Parolayı tekrar gir."),
-        EqualTo("password", "Parolalar eşleşmiyor.")])
-    submit = SubmitField("Hesap oluştur")
-
-    def validate_username(self, field):
-        if User.query.filter(db.func.lower(User.username) == field.data.lower()).first():
-            raise ValidationError("Bu kullanıcı adı alınmış.")
-
-    def validate_email(self, field):
-        if User.query.filter_by(email=field.data.lower().strip()).first():
-            raise ValidationError("Bu e-posta ile zaten bir hesap var.")
-
-
-class LoginForm(FlaskForm):
-    login = StringField("Kullanıcı adı veya e-posta",
-                        validators=[DataRequired("Bu alan zorunlu.")])
-    password = PasswordField("Parola", validators=[DataRequired("Parola zorunlu.")])
-    remember = BooleanField("Beni hatırla")
-    submit = SubmitField("Giriş yap")
-
-
-class PostForm(FlaskForm):
-    title = StringField("Başlık", validators=[
-        DataRequired("Başlık zorunlu."), Length(3, 150, "Başlık 3-150 karakter olmalı.")])
-    content = TextAreaField("Yazı", validators=[
-        DataRequired("Yazı boş olamaz."), Length(min=20, message="Yazı en az 20 karakter olmalı.")])
-    published = BooleanField("Hemen yayınla", default=True)
-    submit = SubmitField("Kaydet")
-
-
-class CommentForm(FlaskForm):
-    body = TextAreaField("Yorumun", validators=[
-        DataRequired("Yorum boş olamaz."), Length(max=1000, message="En fazla 1000 karakter.")])
-    submit = SubmitField("Yorum yap")
-
-
-class BioForm(FlaskForm):
-    bio = StringField("Hakkında", validators=[Length(max=200, message="En fazla 200 karakter.")])
-    submit = SubmitField("Kaydet")
-
-
-class PasswordChangeForm(FlaskForm):
-    old_password = PasswordField("Mevcut parola", validators=[DataRequired("Zorunlu.")])
-    password = PasswordField("Yeni parola", validators=[
-        DataRequired("Zorunlu."), Length(8, 64, "Parola 8-64 karakter olmalı."), guclu_parola])
-    confirm = PasswordField("Yeni parola (tekrar)", validators=[
-        DataRequired("Zorunlu."), EqualTo("password", "Parolalar eşleşmiyor.")])
-    submit = SubmitField("Parolayı değiştir")
-
-
-# ----------------------------- Yardımcılar -----------------------------
-
-IZINLI_ETIKETLER = ["p", "br", "h1", "h2", "h3", "h4", "strong", "em", "b", "i", "ul", "ol",
-                    "li", "blockquote", "code", "pre", "a", "hr", "img", "table", "thead",
-                    "tbody", "tr", "th", "td"]
-IZINLI_OZELLIKLER = {"a": ["href", "title"], "img": ["src", "alt"]}
-
-
-@app.template_filter("md")
-def md_filter(text):
-    html = markdown.markdown(text, extensions=["extra", "nl2br"])
-    temiz = bleach.clean(html, tags=IZINLI_ETIKETLER, attributes=IZINLI_OZELLIKLER,
-                         protocols=["http", "https", "mailto"])
-    return Markup(temiz)
-
-
-@app.template_filter("tarih")
-def tarih_filter(dt):
-    return f"{dt.day} {AYLAR[dt.month - 1]} {dt.year}"
-
-
-@app.template_filter("bas_harf")
-def bas_harf_filter(name):
-    return name[:1].upper()
-
-
-@app.template_global()
-def page_url(page):
-    args = request.args.to_dict()
-    args["page"] = page
-    return url_for(request.endpoint, **(request.view_args or {}), **args)
-
-
-def guvenli_url(target):
-    ref = urlparse(request.host_url)
-    test = urlparse(urljoin(request.host_url, target))
-    return test.scheme in ("http", "https") and ref.netloc == test.netloc
-
-
-def sayfa_no():
-    return request.args.get("page", 1, type=int)
-
-
-def yeni_yazarlar():
-    return User.query.order_by(User.created_at.desc()).limit(5).all()
 
 
 # ----------------------------- Hesap işlemleri -----------------------------
@@ -515,25 +300,40 @@ def seed():
     if User.query.filter_by(username="deniz").first():
         print("Örnek veri zaten var.")
         return
+
+    def gun_once(gun, saat=0):
+        return simdi() - timedelta(days=gun, hours=saat)
+
     deniz = User(username="deniz", email="deniz@example.com",
-                 bio="Kısa öyküler, uzun yürüyüşler.")
+                 bio="Kısa öyküler, uzun yürüyüşler.", created_at=gun_once(40))
     deniz.set_password("parola123")
     ada = User(username="ada", email="ada@example.com",
-               bio="Şiir okur, deneme yazar.")
-    ada.set_password("parola123")
-    db.session.add_all([deniz, ada])
+               bio="Şiir okur, deneme yazar.", created_at=gun_once(30))
+    kerem = User(username="kerem", email="kerem@example.com",
+                 bio="Kod yazar, teknolojiyi sorgular.", created_at=gun_once(20))
+    mira = User(username="mira", email="mira@example.com",
+                bio="Filmler, plaklar, uzun akşamlar.", created_at=gun_once(12))
+    selin = User(username="selin", email="selin@example.com",
+                 bio="Hekim, meraklı, notlar tutar.", created_at=gun_once(6))
+    for u in (deniz, ada, kerem, mira, selin):
+        u.set_password("parola123")
+    db.session.add_all([deniz, ada, kerem, mira, selin])
     db.session.flush()
-    db.session.add_all([
-        Post(title="Gece Yürüyüşleri ve Şehrin Sessizliği", 
-             author=deniz, 
-             content=(
+
+    # ----------------------------- Yazılar -----------------------------
+    
+    gece = Post(
+        title="Gece Yürüyüşleri ve Şehrin Sessizliği", author=deniz,
+        created_at=gun_once(2),
+        content=(
             "Sokak lambalarının sarı ışığı altında adımları saymak bazen en iyi düşünme yolu.\n\n"
             "> Gürültü azaldıkça zihnin sesi daha net duyulur.\n\n"
-            "Her köşede ayrı bir hikaye var ama geceleri hepsi aynı dinginlikte birleşiyor.")),
-        
-        Post(title="Minimalizmin Getirdiği Ferahlık", 
-             author=ada, 
-             content=(
+            "Her köşede ayrı bir hikaye var ama geceleri hepsi aynı dinginlikte birleşiyor."))
+
+    minimal = Post(
+        title="Minimalizmin Getirdiği Ferahlık", author=ada,
+        created_at=gun_once(1),
+        content=(
             "Fazlalıklardan arınmak, yalnızca mekânda boşluk açmak değil; "
             "zihnin kendi yankısını duyabileceği **duru bir sessizlik** inşa etmektir.\n\n"
             "> Eşyanın ve lüzumsuz telaşın gölgesi çekildiğinde, insan sahip olduklarının ağırlığından "
@@ -542,22 +342,126 @@ def seed():
             "* **Hafiflik:** Sahip olunanların yükünden kurtulup zihinsel berraklığa kavuşmak.\n"
             "* **Denge:** Dış dünyayı doldurmak yerine iç dünyaya alan tanımak.\n"
             "* **Öz:** Azaldıkça eksilmeden, asıl olanın güzelliğinde çoğalabilmek.\n\n"
-            "Çünkü **gerçek ferahlık**, dışarıyı doldurmakta değil, içeriye yer açabilmektedir.")),
-        
-        Post(title="Taslak: Yarım Kalan Öykü", 
-             author=deniz, 
-             published=False,
-             content="Tren garında bekleyen adamın elindeki bavul boştu. "
+            "Çünkü **gerçek ferahlık**, dışarıyı doldurmakta değil, içeriye yer açabilmektedir."))
+
+    yapay_zeka = Post(
+        title="Yapay Zekâ Çağında Yavaş Okumak", author=kerem,
+        created_at=gun_once(3),
+        content=(
+            "Bir yanıtı saniyeler içinde almaya alıştık. Soru sorarız, cevap gelir; "
+            "cevabın nereden geldiğini ise çoğu zaman sormayız.\n\n"
+            "> Hız, anlamanın yerini tutmaz; yalnızca beklemenin yerini tutar.\n\n"
+            "### Yavaş okumanın üç alışkanlığı\n"
+            "* **Durmak:** Bir paragrafı bitirince gözlerini sayfadan kaldır ve ne anlattığını kendi cümlenle söyle.\n"
+            "* **Sorgulamak:** Bir bilgiyi, kaynağını bulana kadar kesin saymamak.\n"
+            "* **Geri dönmek:** İyi bir metin ikinci okumada başka bir şey söyler.\n\n"
+            "Teknoloji bizim yerimize özetleyebilir, ama **düşünmenin zahmetini** devredemeyiz. "
+            "Araçlar hızlandıkça, yavaşlamayı seçmek bilinçli bir tavra dönüşüyor."))
+
+    plak = Post(
+        title="Bir Plağın Çizik Sesi", author=mira,
+        created_at=gun_once(4),
+        content=(
+            "İğne ilk oluğa değdiğinde odadaki sessizlik bir an titrer. "
+            "O hafif çıtırtı, müziğin sana ulaşmak için geçtiği yolun sesidir.\n\n"
+            "> Kusursuz kayıtlar çok; ama çiziği olan bir plak yalnızca senindir.\n\n"
+            "### Neden hâlâ dönüp duruyoruz?\n"
+            "* **Ritüel:** Kılıfından çıkarmak, çevirmek, iğneyi bırakmak; dinlemeye hazırlanmanın kendisi.\n"
+            "* **Bütünlük:** Şarkıları karıştırmak yerine albümü baştan sona, sanatçının sırasıyla dinlemek.\n"
+            "* **Dokunmak:** Müziğin elle tutulur, kokusu olan bir nesneye dönüşmesi.\n\n"
+            "Belki de bu yüzden plaklar eskimiyor: **müziği dinlemeyi, bir olay hâline getiriyorlar.**"))
+
+    uyku = Post(
+        title="Uykusuzluğun Bilimi: Beynimiz Geceleri Ne Yapar?", author=selin,
+        created_at=gun_once(5),
+        content=(
+            "Uyuduğumuzda beynimiz kapanmaz; aksine gün boyu biriken işleri toparlamaya başlar.\n\n"
+            "> Uyku bir duraklama değil, görünmeyen bir bakım vardiyasıdır.\n\n"
+            "### Gece boyunca olup bitenler\n"
+            "* **Pekiştirme:** Gün içinde öğrenilenler daha kalıcı hafızaya yerleşir.\n"
+            "* **Temizlik:** Çalışmalar, derin uykuda beyindeki atıkların daha verimli temizlendiğini düşündürüyor.\n"
+            "* **Duygusal denge:** Yetersiz uyku, öfke ve kaygıya verilen tepkileri keskinleştirebilir.\n\n"
+            "Yetişkinler için genel öneri çoğunlukla **7-9 saat** uykudur, ancak ihtiyaç kişiden kişiye değişir. "
+            "Uzun süren uykusuzluk yaşıyorsan bir sağlık uzmanına danışmak en doğrusudur.\n\n"
+            "*Bu yazı genel bilgilendirme amaçlıdır, tıbbi tavsiye yerine geçmez.*"))
+
+    kadraj = Post(
+        title="Kadraj Dışında Kalanlar: Sessiz Filmlerin Dili", author=mira,
+        created_at=gun_once(6),
+        content=(
+            "Sessiz sinema, sesin yokluğunda bile çok şey söyleyebildiğini gösterdi. "
+            "Yüzler, eller ve ışık; hepsi birer cümleye dönüştü.\n\n"
+            "> Söylenmeyen, bazen söylenenden daha yüksek sesle duyulur.\n\n"
+            "### Sessizliğin kullandığı araçlar\n"
+            "* **Jest ve mimik:** Oyuncunun bedeni, diyalogların yerini aldı.\n"
+            "* **Ara yazılar:** Az ama öz cümleler; her sözcüğün ağırlığı fazlaydı.\n"
+            "* **Canlı müzik:** Salonlarda çalınan müzik, her gösterimi biraz farklı kıldı.\n\n"
+            "Bugün bol sesli ve efektli filmler izlerken, o **sadeliği** hatırlamak iyi geliyor."))
+
+    makale = Post(
+        title="Makale Yazmanın Sıkıcı Ama Kurtarıcı Kuralları", author=selin,
+        created_at=gun_once(8),
+        content=(
+            "Akademik yazı çoğu zaman bürokratik görünür. Ama kurallar, düşünceyi "
+            "başkasının okuyabileceği bir biçime sokmanın en kısa yoludur.\n\n"
+            "> İyi bir makale, bir soruya verilmiş sabırlı bir cevaptır.\n\n"
+            "### Hayat kurtaran dört kural\n"
+            "* **Tek bir soru:** Makalenin cevapladığı soruyu tek cümleyle yazabilmelisin.\n"
+            "* **Kaynak ver:** Kendi fikrinle başkasının fikrini birbirinden ayır.\n"
+            "* **Önce kaba taslak:** Mükemmel ilk cümleyi aramak, yazmayı geciktirir.\n"
+            "* **Sonra kısalt:** Okuru yormayan her cümle, çalışmaya saygıdır.\n\n"
+            "Sıkıcı gelen bu düzen, aslında **özgür düşünmenin iskeleti.**"))
+
+    taslak = Post(
+        title="Taslak: Yarım Kalan Öykü", author=deniz, published=False,
+        created_at=gun_once(0, 1),
+        content=(
+            "Tren garında bekleyen adamın elindeki bavul boştu. "
             "Bunu yalnızca kendisi ve perondaki güvercinler biliyordu...\n\n"
             "> *Not:* Karakterin geçmişine dair ipuçlarını buraya ekle. "
             "Gitmeyi mi istiyor, yoksa sadece kalmaktan mı kaçıyor?\n\n"
             "### Geliştirilecek Kısımlar\n"
             "* Saat kulesinin vuruşunu bir metafor olarak kullan.\n"
             "* Bilet kontrol memuru ile kısa, tedirgin bir diyalog yaz.\n\n"
-            "*Cümle burada tıkandı. Belki sonbahar rüzgârı sahneyi tamamlar.*"),
+            "*Cümle burada tıkandı. Belki sonbahar rüzgârı sahneyi tamamlar.*"))
+
+    db.session.add_all([gece, minimal, yapay_zeka, plak, uyku, kadraj, makale, taslak])
+    db.session.flush()
+
+    # ----------------------------- Beğeniler -----------------------------
+
+    begeniler = [
+        (deniz, minimal), (kerem, minimal), (mira, minimal), (selin, minimal),
+        (ada, gece), (mira, gece),
+        (ada, yapay_zeka), (selin, yapay_zeka), (deniz, yapay_zeka),
+        (deniz, plak), (kerem, plak),
+        (ada, uyku), (kerem, uyku), (mira, uyku),
+        (kerem, kadraj),
+        (deniz, makale), (ada, makale),
+    ]
+    db.session.add_all(Like(user_id=u.id, post=p) for u, p in begeniler)
+
+    # ----------------------------- Yorumlar -----------------------------
+
+    db.session.add_all([
+        Comment(body="Son cümle bütün yazıyı topluyor, çok güzel.", user=deniz, post=minimal),
+        Comment(body="Bir de dijital minimalizmi eklesen harika olurdu.", user=kerem, post=minimal),
+        Comment(body="Okurken bir gece yürüyüşüne çıkmak istedim.", user=ada, post=gece),
+        Comment(body="Bunu öğrencilere de anlatmak lazım, teşekkürler.", user=selin, post=yapay_zeka),
+        Comment(body="Dijitalde o ritüeli bulamıyorum, haklısın.", user=kerem, post=plak),
+        Comment(body="Temizlik kısmını bilmiyordum, çok öğretici.", user=deniz, post=uyku),
     ])
+
+    # ----------------------------- Takipçiler -----------------------------
+
+    deniz.follow(ada); deniz.follow(mira)
+    ada.follow(deniz); ada.follow(selin)
+    kerem.follow(selin); kerem.follow(mira); kerem.follow(ada)
+    mira.follow(kerem)
+    selin.follow(ada); selin.follow(mira)
+
     db.session.commit()
-    print("Örnek veri eklendi. Giriş: deniz / parola123")
+    print("Örnek veri eklendi. Giriş: deniz / parola123 (ada, kerem, mira, selin için de aynı parola)")
 
 
 with app.app_context():

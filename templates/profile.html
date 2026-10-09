@@ -7,7 +7,7 @@
     <div class="flex-grow-1">
       <h1 class="page-title mb-1">{{ user.username }}</h1>
       <p class="mb-1">{{ user.bio or 'Henüz bir tanıtım yazısı yok.' }}</p>
-      <small class="text-muted">{{ user.followers.count() }} takipçi · {{ user.followed.count() }} takip · {{ user.created_at|tarih }} tarihinden beri</small>
+      <small class="text-muted">{{ user.followers.count() }} takipçi  •  {{ user.followed.count() }} takip  •  {{ user.created_at|tarih }} tarihinden beri</small>
     </div>
     {% if current_user.is_authenticated and current_user.id != user.id %}
     <form method="post" action="{{ url_for('user_follow', username=user.username) }}">

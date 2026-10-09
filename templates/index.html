@@ -8,8 +8,8 @@
     {% else %}
       {% if not current_user.is_authenticated and not pagination.page > 1 %}
       <section class="hero">
-        <h1>Yazanlar ve okuyanlar için sakin bir yer.</h1>
-        <p>Deneme, öykü, şiir, günlük… Yazını yayımla, beğendiğin yazarları takip et.</p>
+        <h1>Düşünceler uçar, mürekkep kalır.</h1>
+        <p>Kelimeler nereye akmak isterse oraya.</p>
         <a class="btn btn-ink" href="{{ url_for('register') }}">Yazmaya başla</a>
       </section>
       {% endif %}

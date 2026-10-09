@@ -10,10 +10,10 @@
   <h2 class="entry-title"><a href="{{ url_for('post_detail', post_id=post.id) }}">{{ post.title }}</a></h2>
   <p class="entry-excerpt">{{ post.excerpt }}</p>
   <div class="entry-foot">
-    {{ post.reading_time }} dk okuma · {{ post.likes.count() }} beğeni · {{ post.comments|length }} yorum
+    {{ post.reading_time }} dk okuma  •  {{ post.likes.count() }} beğeni  •  {{ post.comments|length }} yorum
   </div>
 </article>
 {% else %}
-<p class="empty">Burada henüz yazı yok.</p>
+<p class="empty">Sayfa henüz boş; mürekkep bekliyor.</p>
 {% endfor %}
 {% include "_pagination.html" %}
