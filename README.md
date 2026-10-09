@@ -2,9 +2,6 @@
 
 > Flask ile yazılmış, modern ve Substack benzeri bir blog platformu.
 
-[![Python](https://img.shields.io/badge/Python-3.10%2B-blue.svg)](https://www.python.org/)
-[![Flask](https://img.shields.io/badge/Flask-3.0%2B-green.svg)](https://flask.palletsprojects.com/)
-
 Mürekkep; kullanıcıların kayıt olup yazı yazabildiği, birbirini takip edebildiği, yazıları beğenip yorum yapabildiği zengin özellikli bir blog uygulamasıdır.
 
 ## 📸 Ekran Görüntüleri
