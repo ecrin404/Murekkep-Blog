@@ -1,0 +1,100 @@
+:root, [data-bs-theme="light"] {
+  --paper: #f6f7f9;
+  --ink: #161a23;
+  --muted: #5d6475;
+  --line: #dfe2e9;
+  --accent: #2b3a9f;
+  --accent-soft: #e6e9fa;
+  --bs-body-bg: var(--paper);
+  --bs-body-color: var(--ink);
+}
+[data-bs-theme="dark"] {
+  --paper: #11141b;
+  --ink: #e7e9ef;
+  --muted: #9aa1b2;
+  --line: #2a2f3b;
+  --accent: #97a4ff;
+  --accent-soft: #1d2233;
+  --bs-body-bg: var(--paper);
+  --bs-body-color: var(--ink);
+}
+
+body { font-family: "Instrument Sans", system-ui, sans-serif; background: var(--paper); color: var(--ink); }
+a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset: 3px; }
+.text-muted { color: var(--muted) !important; }
+.container-wide { max-width: 1080px; }
+main { min-height: 70vh; }
+
+/* Üst menü */
+.site-nav { background: var(--paper); border-bottom: 1px solid var(--line); }
+.navbar-brand { font-family: "Newsreader", Georgia, serif; font-style: italic; font-weight: 700; font-size: 1.6rem; color: var(--ink); }
+.search-form input { min-width: 240px; background: transparent; border-color: var(--line); color: var(--ink); }
+.nav-link, .navbar .dropdown-toggle { color: var(--ink); }
+.btn-ink { background: var(--ink); color: var(--paper); border: 1px solid var(--ink); border-radius: 999px; padding-inline: 1rem; }
+.btn-ink:hover, .btn-ink:focus { background: var(--accent); border-color: var(--accent); color: #fff; }
+.btn-outline-secondary, .btn-outline-danger { border-radius: 999px; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* Avatar */
+.avatar { display: inline-flex; align-items: center; justify-content: center; flex: none;
+  width: 40px; height: 40px; border-radius: 50%; background: var(--accent-soft); color: var(--accent);
+  font-family: "Newsreader", serif; font-weight: 700; font-size: 1.1rem; }
+.avatar-sm { width: 24px; height: 24px; font-size: .8rem; }
+.avatar-lg { width: 84px; height: 84px; font-size: 2.2rem; }
+
+/* Ana sayfa */
+.hero { padding: 1rem 0 2.5rem; border-bottom: 1px solid var(--line); margin-bottom: 1.5rem; }
+.hero h1 { font-family: "Newsreader", Georgia, serif; font-weight: 700; font-size: clamp(2.2rem, 5vw, 3.4rem); line-height: 1.08; max-width: 14em; }
+.hero p { font-size: 1.15rem; color: var(--muted); max-width: 32em; margin: 1rem 0 1.5rem; }
+.tabs { list-style: none; display: flex; gap: 1.5rem; padding: 0; margin: 0 0 .5rem; border-bottom: 1px solid var(--line); }
+.tabs a { display: block; padding: .6rem 0; color: var(--muted); text-decoration: none; border-bottom: 2px solid transparent; margin-bottom: -1px; }
+.tabs a.active { color: var(--ink); border-color: var(--accent); font-weight: 600; }
+
+.entry { padding: 1.6rem 0; border-bottom: 1px solid var(--line); }
+.entry-meta { display: flex; flex-wrap: wrap; align-items: center; gap: .75rem; font-size: .88rem; color: var(--muted); }
+.author-link { display: inline-flex; align-items: center; gap: .5rem; color: var(--ink); text-decoration: none; font-weight: 500; }
+.author-link:hover { color: var(--accent); }
+.entry-title { font-family: "Newsreader", Georgia, serif; font-weight: 700; font-size: 1.85rem; line-height: 1.2; margin: .5rem 0; }
+.entry-title a { color: var(--ink); text-decoration: none; }
+.entry-title a:hover { color: var(--accent); }
+.entry-excerpt { font-family: "Newsreader", Georgia, serif; font-size: 1.15rem; line-height: 1.55; color: var(--muted); margin-bottom: .6rem; }
+.entry-foot { font-size: .85rem; color: var(--muted); }
+.empty { padding: 3rem 0; color: var(--muted); }
+
+.side-box { border-left: 1px solid var(--line); padding-left: 1.5rem; }
+.side-title { font-family: "Newsreader", serif; font-size: 1.2rem; font-weight: 600; margin-bottom: 1rem; }
+.side-author { display: flex; gap: .75rem; padding: .6rem 0; color: var(--ink); text-decoration: none; line-height: 1.3; }
+.side-author:hover strong { color: var(--accent); }
+@media (max-width: 991px) { .side-box { border-left: 0; padding-left: 0; border-top: 1px solid var(--line); padding-top: 1.5rem; } }
+
+.pager { display: flex; justify-content: space-between; align-items: center; padding: 1.5rem 0; }
+
+/* Okuma sayfası */
+.reader { max-width: 700px; margin-inline: auto; }
+.reader-title { font-family: "Newsreader", Georgia, serif; font-weight: 700; font-size: clamp(2rem, 5vw, 3rem); line-height: 1.12; margin-bottom: 1.25rem; }
+.byline { display: flex; justify-content: space-between; align-items: center; gap: 1rem; padding-bottom: 1.25rem; border-bottom: 1px solid var(--line); margin-bottom: 2rem; }
+.byline .author-link { line-height: 1.3; }
+.prose { font-family: "Newsreader", Georgia, serif; font-size: 1.3rem; line-height: 1.75; }
+.prose p { margin-bottom: 1.4rem; }
+.prose h1, .prose h2, .prose h3 { font-weight: 700; margin: 2.2rem 0 1rem; line-height: 1.25; }
+.prose blockquote { border-left: 3px solid var(--accent); padding-left: 1.2rem; font-style: italic; color: var(--muted); margin: 1.8rem 0; }
+.prose img { max-width: 100%; height: auto; border-radius: 4px; }
+.prose pre { background: var(--accent-soft); padding: 1rem; border-radius: 6px; overflow-x: auto; font-size: .95rem; }
+.prose hr { margin: 2.5rem auto; width: 30%; }
+.actions { display: flex; gap: .6rem; flex-wrap: wrap; padding: 1.5rem 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); margin-top: 2rem; }
+
+.comments { padding-top: 2rem; }
+.comments h2 { font-family: "Newsreader", serif; font-size: 1.5rem; margin-bottom: 1.25rem; }
+.comment { display: flex; gap: .75rem; padding: 1rem 0; border-top: 1px solid var(--line); }
+.comment-body { white-space: pre-wrap; overflow-wrap: anywhere; }
+
+/* Formlar */
+.page-title { font-family: "Newsreader", Georgia, serif; font-weight: 700; font-size: 2.2rem; margin-bottom: 1.5rem; }
+.auth-box { max-width: 420px; margin: 2rem auto; }
+.form-control { background: transparent; color: var(--ink); border-color: var(--line); }
+.form-control:focus { background: transparent; color: var(--ink); border-color: var(--accent); box-shadow: 0 0 0 .2rem var(--accent-soft); }
+.title-input { font-family: "Newsreader", serif; font-size: 1.8rem; font-weight: 700; border: 0; border-bottom: 1px solid var(--line); border-radius: 0; padding-inline: 0; }
+.editor { font-family: "Newsreader", serif; font-size: 1.15rem; line-height: 1.7; }
+.profile-head { display: flex; align-items: center; gap: 1.25rem; flex-wrap: wrap; padding-bottom: 1.5rem; border-bottom: 1px solid var(--line); }
+
+.site-footer { border-top: 1px solid var(--line); padding: 1.5rem 0; color: var(--muted); font-size: .88rem; }

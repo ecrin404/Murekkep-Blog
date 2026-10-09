@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}{{ baslik }}{% endblock %}
+{% block content %}
+<div class="reader">
+  <h1 class="page-title">{{ baslik }}</h1>
+  <form method="post" novalidate>
+    {{ form.hidden_tag() }}
+    <div class="mb-3">
+      {{ form.title(class="form-control title-input" + (" is-invalid" if form.title.errors else ""), placeholder="Başlık") }}
+      {% for e in form.title.errors %}<div class="invalid-feedback">{{ e }}</div>{% endfor %}
+    </div>
+    <div class="mb-3">
+      {{ form.content(class="form-control editor" + (" is-invalid" if form.content.errors else ""), rows=18, placeholder="Yazmaya başla…") }}
+      {% for e in form.content.errors %}<div class="invalid-feedback">{{ e }}</div>{% endfor %}
+      <div class="form-text">Markdown kullanabilirsin: **kalın**, *italik*, ## başlık, &gt; alıntı, - liste</div>
+    </div>
+    <div class="form-check mb-3">
+      {{ form.published(class="form-check-input") }}
+      <label class="form-check-label" for="published">Hemen yayınla (işaretlemezsen taslak olarak kalır)</label>
+    </div>
+    <button class="btn btn-ink" type="submit">Kaydet</button>
+    <a class="btn btn-link" href="{{ url_for('index') }}">Vazgeç</a>
+  </form>
+</div>
+{% endblock %}

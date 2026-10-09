@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}{% if q is defined %}Arama{% else %}Ana sayfa{% endif %}{% endblock %}
+{% block content %}
+<div class="row g-5">
+  <div class="col-lg-8">
+    {% if q is defined %}
+      <h1 class="page-title">{% if q %}“{{ q }}” için {{ pagination.total }} sonuç{% else %}Arama{% endif %}</h1>
+    {% else %}
+      {% if not current_user.is_authenticated and not pagination.page > 1 %}
+      <section class="hero">
+        <h1>Yazanlar ve okuyanlar için sakin bir yer.</h1>
+        <p>Deneme, öykü, şiir, günlük… Yazını yayımla, beğendiğin yazarları takip et.</p>
+        <a class="btn btn-ink" href="{{ url_for('register') }}">Yazmaya başla</a>
+      </section>
+      {% endif %}
+      <ul class="tabs">
+        <li><a class="{{ 'active' if sekme == 'kesfet' }}" href="{{ url_for('index') }}">Keşfet</a></li>
+        {% if current_user.is_authenticated %}
+        <li><a class="{{ 'active' if sekme == 'takip' }}" href="{{ url_for('index', sekme='takip') }}">Takip ettiklerim</a></li>
+        {% endif %}
+      </ul>
+    {% endif %}
+    {% include "_post_list.html" %}
+  </div>
+  <aside class="col-lg-4">
+    <div class="side-box">
+      <h2 class="side-title">Yeni yazarlar</h2>
+      {% for u in yazarlar %}
+      <a class="side-author" href="{{ url_for('user_profile', username=u.username) }}">
+        <span class="avatar">{{ u.username|bas_harf }}</span>
+        <span><strong>{{ u.username }}</strong><br><small class="text-muted">{{ u.bio or 'Henüz bir şey yazmadı.' }}</small></span>
+      </a>
+      {% endfor %}
+    </div>
+  </aside>
+</div>
+{% endblock %}

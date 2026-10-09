@@ -1,0 +1,19 @@
+{% for post in pagination.items %}
+<article class="entry">
+  <div class="entry-meta">
+    <a class="author-link" href="{{ url_for('user_profile', username=post.author.username) }}">
+      <span class="avatar avatar-sm">{{ post.author.username|bas_harf }}</span>{{ post.author.username }}
+    </a>
+    <span>{{ post.created_at|tarih }}</span>
+    {% if not post.published %}<span class="badge text-bg-warning">Taslak</span>{% endif %}
+  </div>
+  <h2 class="entry-title"><a href="{{ url_for('post_detail', post_id=post.id) }}">{{ post.title }}</a></h2>
+  <p class="entry-excerpt">{{ post.excerpt }}</p>
+  <div class="entry-foot">
+    {{ post.reading_time }} dk okuma · {{ post.likes.count() }} beğeni · {{ post.comments|length }} yorum
+  </div>
+</article>
+{% else %}
+<p class="empty">Burada henüz yazı yok.</p>
+{% endfor %}
+{% include "_pagination.html" %}

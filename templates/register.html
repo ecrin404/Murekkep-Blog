@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% from "_field.html" import field %}
+{% block title %}Kayıt ol{% endblock %}
+{% block content %}
+<div class="auth-box">
+  <h1 class="page-title">Hesap oluştur</h1>
+  <form method="post" novalidate>
+    {{ form.hidden_tag() }}
+    {{ field(form.username) }}
+    {{ field(form.email) }}
+    {{ field(form.password) }}
+    <div class="form-text mb-3">En az 8 karakter; en az bir harf ve bir rakam.</div>
+    {{ field(form.confirm) }}
+    <button class="btn btn-ink w-100" type="submit">Hesap oluştur</button>
+  </form>
+  <p class="mt-3 text-muted">Zaten hesabın var mı? <a href="{{ url_for('login') }}">Giriş yap</a></p>
+</div>
+{% endblock %}

@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}{{ post.title }}{% endblock %}
+{% block content %}
+<article class="reader">
+  {% if not post.published %}<div class="alert alert-warning">Bu yazı taslak; sadece sen görebilirsin.</div>{% endif %}
+  <h1 class="reader-title">{{ post.title }}</h1>
+  <div class="byline">
+    <a class="author-link" href="{{ url_for('user_profile', username=post.author.username) }}">
+      <span class="avatar">{{ post.author.username|bas_harf }}</span>
+      <span><strong>{{ post.author.username }}</strong><br>
+      <small class="text-muted">{{ post.created_at|tarih }} · {{ post.reading_time }} dk okuma</small></span>
+    </a>
+    {% if current_user.is_authenticated and current_user.id != post.author_id %}
+    <form method="post" action="{{ url_for('user_follow', username=post.author.username) }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button class="btn btn-sm {{ 'btn-outline-secondary' if current_user.is_following(post.author) else 'btn-ink' }}">
+        {{ 'Takiptesin' if current_user.is_following(post.author) else 'Takip et' }}</button>
+    </form>
+    {% endif %}
+  </div>
+
+  <div class="prose">{{ post.content|md }}</div>
+
+  <div class="actions">
+    <form method="post" action="{{ url_for('post_like', post_id=post.id) }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button class="btn btn-sm {{ 'btn-ink' if post.liked_by(current_user) else 'btn-outline-secondary' }}"
+              {% if not current_user.is_authenticated %}disabled title="Beğenmek için giriş yap"{% endif %}>
+        {{ 'Beğendin' if post.liked_by(current_user) else 'Beğen' }} · {{ post.likes.count() }}</button>
+    </form>
+    {% if current_user.is_authenticated and current_user.id == post.author_id %}
+    <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('post_edit', post_id=post.id) }}">Düzenle</a>
+    <form method="post" action="{{ url_for('post_delete', post_id=post.id) }}"
+          onsubmit="return confirm('Bu yazı kalıcı olarak silinecek. Emin misin?');">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button class="btn btn-sm btn-outline-danger">Sil</button>
+    </form>
+    {% endif %}
+  </div>
+
+  <section id="yorumlar" class="comments">
+    <h2>{{ post.comments|length }} yorum</h2>
+    {% if current_user.is_authenticated %}
+    <form method="post" action="{{ url_for('post_comment', post_id=post.id) }}" class="mb-4">
+      {{ form.hidden_tag() }}
+      {{ form.body(class="form-control", rows=3, placeholder="Düşüncelerini paylaş…") }}
+      <button class="btn btn-ink btn-sm mt-2">Yorum yap</button>
+    </form>
+    {% else %}
+    <p class="text-muted"><a href="{{ url_for('login', next=request.path) }}">Giriş yap</a> ve yorum bırak.</p>
+    {% endif %}
+    {% for c in post.comments %}
+    <div class="comment">
+      <span class="avatar avatar-sm">{{ c.user.username|bas_harf }}</span>
+      <div class="flex-grow-1">
+        <div><a class="author-link" href="{{ url_for('user_profile', username=c.user.username) }}"><strong>{{ c.user.username }}</strong></a>
+          <small class="text-muted ms-2">{{ c.created_at|tarih }}</small></div>
+        <div class="comment-body">{{ c.body }}</div>
+        {% if current_user.is_authenticated and current_user.id in (c.user_id, post.author_id) %}
+        <form method="post" action="{{ url_for('comment_delete', comment_id=c.id) }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button class="btn btn-link btn-sm p-0 text-danger">Sil</button>
+        </form>
+        {% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  </section>
+</article>
+{% endblock %}

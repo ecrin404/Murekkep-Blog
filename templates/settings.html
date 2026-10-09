@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% from "_field.html" import field %}
+{% block title %}Ayarlar{% endblock %}
+{% block content %}
+<div class="auth-box">
+  <h1 class="page-title">Ayarlar</h1>
+  <form method="post" action="{{ url_for('settings') }}" novalidate class="mb-5">
+    {{ form.hidden_tag() }}
+    {{ field(form.bio) }}
+    <button class="btn btn-ink" type="submit">Kaydet</button>
+  </form>
+  <h2 class="side-title">Parolayı değiştir</h2>
+  <form method="post" action="{{ url_for('change_password') }}" novalidate>
+    {{ pform.hidden_tag() }}
+    {{ field(pform.old_password) }}
+    {{ field(pform.password) }}
+    {{ field(pform.confirm) }}
+    <button class="btn btn-ink" type="submit">Parolayı değiştir</button>
+  </form>
+</div>
+{% endblock %}
