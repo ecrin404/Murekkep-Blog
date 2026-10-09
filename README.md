@@ -6,13 +6,13 @@ Mürekkep; kullanıcıların kayıt olup yazı yazabildiği, birbirini takip ede
 
 ## 📸 Ekran Görüntüleri
 
-| Karşılama / Ana Sayfa | Keşfet / Akış |
-| :---: | :---: |
-| ![Ana Sayfa](images/anasayfa.png) | ![Akış](images/akis.png) |
-
-| Yazı Detay & Okuma | Profil Sayfası | Gece Modu |
+| Karşılama / Ana Sayfa | Keşfet / Akış | Profil Sayfası |
 | :---: | :---: | :---: |
-| ![Yazı](images/yazi.png) | ![Profil](images/profil.png) | ![Gece Modu](images/gece-modu.png) |
+| ![Ana Sayfa](images/anasayfa.png) | ![Akış](images/akis.png) | ![Profil](images/profil.png) |
+
+| Yazı Detay | Yeni Yazı | Beğeni & Yorum | Gece Modu |
+| :---: | :---: | :---: | :---: |
+| ![Yazı](images/yazi.png) | ![Yeni Yazı](images/yeni-yazi.png) | ![Yorum](images/yorum.png) | ![Gece Modu](images/gece-modu.png) |
 
 ---
 
@@ -26,6 +26,22 @@ Mürekkep; kullanıcıların kayıt olup yazı yazabildiği, birbirini takip ede
 - ❤️ **Etkileşim:** Yazılara beğeni bırakma ve yorum yapma.
 - ⚙️ **Kullanıcı Deneyimi:** Parola değiştirme, profil açıklaması düzenleme ve göz yormayan **Gece Modu (Dark Mode)** desteği.
 - 🗄️ **Veritabanı:** `SQLite` + `SQLAlchemy` (`blog.db` ilk çalıştırmada otomatik oluşur).
+
+---
+
+## 🗂️ Proje Yapısı
+
+```
+Murekkep-Blog/
+├── app.py            # Uygulama kurulumu ve rotalar (routes)
+├── models.py         # Veritabanı nesnesi ve modeller (User, Post, Comment, Like)
+├── forms.py          # Form sınıfları ve doğrulayıcılar
+├── utils.py          # Şablon filtreleri ve yardımcı fonksiyonlar
+├── requirements.txt  # Bağımlılıklar
+├── templates/        # HTML şablonları
+├── static/           # CSS
+└── images/           # README ekran görüntüleri
+```
 
 ---
 
@@ -48,9 +64,12 @@ pip install -r requirements.txt
 
 # Uygulamayı başlatın
 python app.py
+
+!!! Boş bir veritabanıyla başlarsan ana sayfada yazı görünmez; örnek veri için aşağıdaki komutu çalıştır.
 ```
 Tarayıcınızda http://127.0.0.1:5000 adresini açarak uygulamayı inceleyebilirsiniz.
 
-Örnek veri için: `flask --app app seed` (kullanıcı: `deniz`, parola: `parola123`)
+Örnek veri için: `flask --app app seed`
+(kullanıcılar: `deniz`, `ada`, `kerem`, `mira`, `selin` — hepsinin parolası: `parola123`)
 
 
